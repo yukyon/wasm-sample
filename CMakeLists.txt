@@ -3,3 +3,4 @@ project(wasm-sample)
 
 add_subdirectory(tflite)
 add_subdirectory(linear)
+add_subdirectory(catdog)
