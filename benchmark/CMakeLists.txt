@@ -1,0 +1,29 @@
+cmake_minimum_required(VERSION 3.5)
+project(benchmark)
+
+set(CMAKE_EXECUTABLE_SUFFIX ".html")
+set(CMAKE_CXX_STANDARD 17)
+set(INC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include)
+set(SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+
+#set(EMSDK_FLAGS
+#        " -pthread -s USE_PTHREADS -s PTHREAD_POOL_SIZE=4")
+set(EMSDK_FLAGS
+        "-s INITIAL_MEMORY=128mb -s ALLOW_MEMORY_GROWTH=1")
+
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${EMSDK_FLAGS}")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${EMSDK_FLAGS}")
+
+if(TFLITE_WITH_XNNPACK_SIMD)
+    ADD_DEFINITIONS(-DUSE_XNNPACK_SIMD)
+endif()
+
+add_executable(benchmark
+    ${SRC_DIR}/benchmark.cc
+)
+
+target_include_directories(benchmark PUBLIC ${INC_DIR})
+target_link_libraries(benchmark tflite)
+set_target_properties(benchmark PROPERTIES LINK_FLAGS "-o benchmark.html --preload-file model")
+
+file(INSTALL model DESTINATION .)
