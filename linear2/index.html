@@ -1,0 +1,33 @@
+<!doctype html>
+<html>
+<head>
+    <title>Linear Wasm Sample Page</title>
+    <meta name="description" content="Linear Wasm Sample Page">
+    <meta name="keywords" content="wasm sample linear tflite">
+    <link rel="icon" href="data:;base64,iVBORw0KGgo=">
+    <script type="module">
+        import {start} from './index.js';
+        document.querySelector('#test-linear').addEventListener('click', start);
+    </script>        
+</head>
+<body>
+<div class="block">
+    <button id="test-linear"> Test Linear </button>
+</div>
+
+<style>
+div.block {
+    margin: auto;
+    width: 50%; 
+    text-align: center;
+    position: relative;
+}
+
+.block .content {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+</style>
+</body>
+</html>
