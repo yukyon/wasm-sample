@@ -1,28 +1,32 @@
 cmake_minimum_required(VERSION 3.5)
 project(benchmark)
 
+set(EXECUTABLE "benchmark")
 set(CMAKE_EXECUTABLE_SUFFIX ".html")
 set(CMAKE_CXX_STANDARD 17)
 set(INC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include)
 set(SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
-set(EMSDK_FLAGS
-        "-s INITIAL_MEMORY=128mb -s ALLOW_MEMORY_GROWTH=1")
-
-if(TFLITE_WITH_XNNPACK_SIMD)
-    ADD_DEFINITIONS(-DUSE_XNNPACK_SIMD)
-    STRING(APPEND EMSDK_FLAGS " -pthread -s USE_PTHREADS -s PTHREAD_POOL_SIZE=4")
+set(COMPILE_FLAGS "")
+if(ENABLE_SIMD)
+    SET(COMPILE_FLAGS "${COMPILE_FLAGS} -pthread -s INITIAL_MEMORY=256mb")
 endif()
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${EMSDK_FLAGS}")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${EMSDK_FLAGS}")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${COMPILE_FLAGS}")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${COMPILE_FLAGS}")
 
-add_executable(benchmark
+set(EMSCRIPTEN_LINK_FLAGS "${EMSCRIPTEN_LINK_FLAGS} -s ALLOW_MEMORY_GROWTH=1")
+set(EMSCRIPTEN_LINK_FLAGS "${EMSCRIPTEN_LINK_FLAGS} ${COMPILE_FLAGS}")
+if(ENABLE_SIMD)
+    SET(EMSCRIPTEN_LINK_FLAGS "${EMSCRIPTEN_LINK_FLASGS} -s USE_PTHREADS=1 -s PTHREAD_POOL_SIZE=4")
+endif()
+
+add_executable(${EXECUTABLE}
     ${SRC_DIR}/benchmark.cc
 )
 
-target_include_directories(benchmark PUBLIC ${INC_DIR})
-target_link_libraries(benchmark tflite)
-set_target_properties(benchmark PROPERTIES LINK_FLAGS "-o benchmark.html --preload-file model")
+target_include_directories(${EXECUTABLE} PUBLIC ${INC_DIR})
+target_link_libraries(${EXECUTABLE} tflite)
+set_target_properties(${EXECUTABLE} PROPERTIES LINK_FLAGS "${EMSCRIPTEN_LINK_FLAGS} -o linear.html --preload-file model")
 
 file(INSTALL model DESTINATION .)

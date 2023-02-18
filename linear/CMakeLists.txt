@@ -1,28 +1,32 @@
 cmake_minimum_required(VERSION 3.5)
 project(linear)
 
+set(EXECUTABLE "linear")
 set(CMAKE_EXECUTABLE_SUFFIX ".html")
 set(CMAKE_CXX_STANDARD 17)
 set(INC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include)
 set(SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
-set(EMSDK_FLAGS
-        "-s ALLOW_MEMORY_GROWTH=1")
-
-if(TFLITE_WITH_XNNPACK_SIMD)
-    ADD_DEFINITIONS(-DUSE_XNNPACK_SIMD)
-    SET(EMSDK_FLAGS "${EMSDK_FLASGS} -pthread -s USE_PTHREADS -s PTHREAD_POOL_SIZE=4")
+set(COMPILE_FLAGS "")
+if(ENABLE_SIMD)
+    SET(COMPILE_FLAGS "${COMPILE_FLAGS} -pthread")
 endif()
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${EMSDK_FLAGS}")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${EMSDK_FLAGS}")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${COMPILE_FLAGS}")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${COMPILE_FLAGS}")
 
-add_executable(linear
+set(EMSCRIPTEN_LINK_FLAGS "${EMSCRIPTEN_LINK_FLAGS} --memory-init-file 0 -s ALLOW_MEMORY_GROWTH=1")
+set(EMSCRIPTEN_LINK_FLAGS "${EMSCRIPTEN_LINK_FLAGS} ${COMPILE_FLAGS}")
+if(ENABLE_SIMD)
+    SET(EMSCRIPTEN_LINK_FLAGS "${EMSCRIPTEN_LINK_FLASGS} -s USE_PTHREADS=1 -s PTHREAD_POOL_SIZE=4")
+endif()
+
+add_executable(${EXECUTABLE}
     ${SRC_DIR}/linear.cc
 )
 
-target_include_directories(linear PUBLIC ${INC_DIR})
-target_link_libraries(linear tflite)
-set_target_properties(linear PROPERTIES LINK_FLAGS "-o linear.html --preload-file model")
+target_include_directories(${EXECUTABLE} PUBLIC ${INC_DIR})
+target_link_libraries(${EXECUTABLE} tflite)
+set_target_properties(${EXECUTABLE} PROPERTIES LINK_FLAGS "${EMSCRIPTEN_LINK_FLAGS} -o linear.html --preload-file model")
 
 file(INSTALL model DESTINATION .)

@@ -1,36 +1,46 @@
 cmake_minimum_required(VERSION 3.5)
 project(linear2)
 
-#set(CMAKE_EXECUTABLE_SUFFIX ".html")
+set(EXECUTABLE "linear2")
 set(CMAKE_CXX_STANDARD 17)
 set(INC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include)
 set(SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
-set(EMSDK_FLAGS
-  "-s MODULARIZE \
-   -s ALLOW_MEMORY_GROWTH=1 \
+set(COMPILE_FLAGS
+  "-s MODULARIZE=1 \
    -s EXPORT_NAME='\"createModule\"' \
    -s EXPORTED_FUNCTIONS='[\"_malloc\", \"_free\"]' \
    -s EXPORTED_RUNTIME_METHODS='[\"ccall\"]'")
 
-if(TFLITE_WITH_XNNPACK_SIMD)
-   ADD_DEFINITIONS(-DUSE_XNNPACK_SIMD)
-   SET(EMSDK_FLAGS "${EMSDK_FLAGS} -pthread -s USE_PTHREADS -s PTHREAD_POOL_SIZE=4")
+if(ENABLE_SIMD)
+    SET(COMPILE_FLAGS "${COMPILE_FLAGS} -pthread")
 endif()
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${EMSDK_FLAGS}")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${EMSDK_FLAGS}")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${COMPILE_FLAGS}")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${COMPILE_FLAGS}")
 
+set(EMSCRIPTEN_LINK_FLAGS
+    "-s ALLOW_MEMORY_GROWTH=1")
 
-add_executable(linear2
+set(EMSCRIPTEN_LINK_FLAGS "${EMSCRIPTEN_LINK_FLAGS} ${COMPILE_FLAGS}")
+if(ENABLE_SIMD)
+    SET(EMSCRIPTEN_LINK_FLAGS "${EMSCRIPTEN_LINK_FLASGS} -s USE_PTHREADS=1 -s PTHREAD_POOL_SIZE=4")
+endif()
+
+add_executable(${EXECUTABLE}
     ${SRC_DIR}/linear2.cc
 )
 
-target_include_directories(linear2 PUBLIC ${INC_DIR})
-target_link_libraries(linear2 tflite)
-set_target_properties(linear2 PROPERTIES LINK_FLAGS "--preload-file model")
+target_include_directories(${EXECUTABLE} PUBLIC ${INC_DIR})
+target_link_libraries(${EXECUTABLE} tflite)
+set_target_properties(${EXECUTABLE} PROPERTIES LINK_FLAGS "${EMSCRIPTEN_LINK_FLAGS}")
 
-file(INSTALL model DESTINATION .)
-file(INSTALL index.js DESTINATION .)
-file(INSTALL wasm.js DESTINATION .)
-file(INSTALL index.html DESTINATION .)
+set(DESTINATION_PATH ".")
+if(ENABLE_SIMD)
+   file(INSTALL wasm_simd.js DESTINATION ${DESTINATION_PATH} RENAME wasm.js)
+else()
+   file(INSTALL wasm_nonsimd.js DESTINATION ${DESTINATION_PATH} RENAME wasm.js)
+endif()
+
+file(INSTALL model DESTINATION ${DESTINATION_PATH})
+file(INSTALL index.js index.html DESTINATION ${DESTINATION_PATH})

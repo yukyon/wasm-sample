@@ -1,0 +1,48 @@
+export class WasmWrapper {
+    constructor() {
+        this.loaded = false;
+        this.loadModuleScript_("./linear2.js").then(() => {
+            createModule().then(instance => {
+                this.wasmModule = instance;
+                this.loaded = true;
+            });
+        });
+    }
+
+    /** @private */
+    loadModuleScript_(jsUrl) {
+        return new Promise((resolve, reject) => {
+            let script = document.createElement('script');
+            script.onload = (() => {
+                resolve();
+            });
+            script.onerror = (() => {
+                reject();
+            });
+            script.src = jsUrl;
+            document.body.appendChild(script);
+        });
+    }
+
+    /** @private */
+    createBuffer_(buffer_len) {
+        return this.wasmModule._malloc(buffer_len);
+    }
+
+    /** @private */
+    freeBuffer_(buffer) {
+        this.wasmModule._free(buffer);
+    }
+
+    test_linear(modelData, dataLen, n) {
+        const buffer = this.createBuffer_(dataLen);
+        this.wasmModule.HEAPU8.set(modelData, buffer);
+        this.result = this.wasmModule.ccall(
+            'test_linear',
+            'number',
+            ['number', 'number', 'number'],
+            [buffer, dataLen, n]);
+            console.log('test linear result = ' + this.result);
+        this.freeBuffer_(buffer);
+    }
+}
